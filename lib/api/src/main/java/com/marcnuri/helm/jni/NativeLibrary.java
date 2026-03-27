@@ -47,14 +47,47 @@ public interface NativeLibrary {
     throw new IllegalStateException("No NativeLibrary implementation found, please add one of the supported dependencies to your project");
   }
 
-  static NativeLibrary serviceProviderLibrary(ClassLoader classLoader) {
-    for (NativeLibrary nativeLibrary : ServiceLoader.load(
-      NativeLibrary.class, classLoader == null ? Thread.currentThread().getContextClassLoader() : classLoader)
-    ) {
-      return nativeLibrary;
+    static NativeLibrary serviceProviderLibrary(ClassLoader classLoader) {
+        final ClassLoader effectiveCl = classLoader != null ? classLoader : Thread.currentThread().getContextClassLoader();
+        final String os = detectOs();
+        final String arch = detectArch();
+        if (os == null || arch == null) {
+            return null;
+        }
+        for (NativeLibrary lib : ServiceLoader.load(NativeLibrary.class, effectiveCl)) {
+            final String bin = lib.getBinaryName();
+            if (bin != null) {
+                final String lower = bin.toLowerCase();
+                if (lower.contains(os) && lower.contains(arch)) {
+                    return lib;
+                }
+            }
+        }
+        return null;
     }
-    return null;
-  }
+
+    static String detectOs() {
+        final String osName = System.getProperty("os.name", "").toLowerCase();
+        if (osName.contains("win")) {
+            return "windows";
+        } else if (osName.contains("mac")) {
+            return "darwin";
+        } else if (osName.contains("nux") || osName.contains("nix") || osName.contains("aix")) {
+            return "linux";
+        }
+        return null;
+    }
+
+    static String detectArch() {
+        final String arch = System.getProperty("os.arch", "").toLowerCase();
+        if ("amd64".equals(arch) || "x86_64".equals(arch)) {
+            return "amd64";
+        } else if ("arm64".equals(arch) || "aarch64".equals(arch)) {
+            return "arm64";
+        }
+        return null;
+    }
+
 
   String getBinaryName();
 

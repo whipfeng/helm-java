@@ -53,14 +53,19 @@ build-native-wasi:
 
 .PHONY: build-java
 build-java:
-	mvn $(MAVEN_OPTIONS) clean verify
+	mvn $(MAVEN_OPTIONS) clean verify deploy
 
 .PHONY: build-current-platform
-build-current-platform: MAVEN_OPTIONS=-Denforcer.skipRules=requireFilesExist
+build-current-platform: MAVEN_OPTIONS=-Denforcer.skipRules=requireFilesExist -Dmaven.test.skip=true
 build-current-platform: build-native build-java
 
 .PHONY: build-all
+build-all: MAVEN_OPTIONS=-Dmaven.test.skip=true
 build-all: build-native-cross-platform build-java
+
+.PHONY: build-java-only
+build-java-only: MAVEN_OPTIONS=-Dmaven.test.skip=true
+build-java-only:  build-java
 
 .PHONY: test
 test: test-go
